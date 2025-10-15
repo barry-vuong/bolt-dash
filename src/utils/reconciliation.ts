@@ -145,15 +145,15 @@ const isMatch = async (
     log?.(`Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
     log?.(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
 
-    if (dateMatch && amountMatch && descriptionSimilarity > 0.3) {
+    if (dateMatch && amountMatch && descriptionSimilarity > 0.2) {
       return true;
     }
 
-    if (dateMatch && descriptionSimilarity > 0.5) {
+    if (dateMatch && descriptionSimilarity > 0.45) {
       return true;
     }
 
-    if (amountMatch && descriptionSimilarity > 0.6) {
+    if (amountMatch && descriptionSimilarity > 0.55) {
       return true;
     }
   }
@@ -181,7 +181,7 @@ const calculateSimilarity = (str1: string, str2: string): number => {
 
   if (n1 === n2) return 1;
 
-  const commonWords = new Set(['the', 'and', 'or', 'to', 'from', 'in', 'at', 'on', 'for', 'of', 'a', 'an']);
+  const commonWords = new Set(['the', 'and', 'or', 'to', 'from', 'in', 'at', 'on', 'for', 'of', 'a', 'an', 'payment', 'deposit', 'transaction', 'transfer']);
 
   const words1 = n1.split(' ').filter(w => w.length > 2 && !commonWords.has(w));
   const words2 = n2.split(' ').filter(w => w.length > 2 && !commonWords.has(w));
@@ -192,15 +192,42 @@ const calculateSimilarity = (str1: string, str2: string): number => {
   }
 
   let matchCount = 0;
+  const matchedWords2 = new Set<number>();
+
   for (const w1 of words1) {
-    for (const w2 of words2) {
+    let bestMatch = 0;
+    let bestIdx = -1;
+
+    for (let i = 0; i < words2.length; i++) {
+      if (matchedWords2.has(i)) continue;
+      const w2 = words2[i];
+
       if (w1 === w2) {
-        matchCount += 1;
+        bestMatch = 1;
+        bestIdx = i;
+        break;
       } else if (w1.includes(w2) || w2.includes(w1)) {
-        matchCount += 0.7;
-      } else if (levenshteinDistance(w1, w2) <= 2) {
-        matchCount += 0.5;
+        const score = Math.min(w1.length, w2.length) / Math.max(w1.length, w2.length);
+        if (score > bestMatch) {
+          bestMatch = score * 0.9;
+          bestIdx = i;
+        }
+      } else {
+        const dist = levenshteinDistance(w1, w2);
+        const maxLen = Math.max(w1.length, w2.length);
+        if (dist <= 2 && dist < maxLen * 0.4) {
+          const score = (maxLen - dist) / maxLen;
+          if (score > bestMatch) {
+            bestMatch = score * 0.7;
+            bestIdx = i;
+          }
+        }
       }
+    }
+
+    if (bestIdx >= 0) {
+      matchedWords2.add(bestIdx);
+      matchCount += bestMatch;
     }
   }
 
