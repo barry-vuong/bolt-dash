@@ -145,15 +145,20 @@ const isMatch = async (
     log?.(`Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
     log?.(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
 
-    if (dateMatch && amountMatch && descriptionSimilarity > 0.2) {
-      return true;
+    if (dateMatch && amountMatch) {
+      if (descriptionSimilarity > 0.05) {
+        log?.(`✓ MATCHED (date + amount + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
+        return true;
+      }
     }
 
     if (dateMatch && descriptionSimilarity > 0.45) {
+      log?.(`✓ MATCHED (date + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
       return true;
     }
 
     if (amountMatch && descriptionSimilarity > 0.55) {
+      log?.(`✓ MATCHED (amount + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
       return true;
     }
   }
