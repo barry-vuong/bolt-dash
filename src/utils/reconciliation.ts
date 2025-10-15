@@ -1,5 +1,4 @@
 import { Transaction } from './fileParser';
-import { calculateAISimilarity, isModelReady } from './aiMatcher';
 
 export interface ReconciliationResult {
   matched: Array<{
@@ -24,7 +23,6 @@ export interface ReconciliationResult {
 export const reconcileTransactions = async (
   bankTransactions: Transaction[],
   accountTransactions: Transaction[],
-  useAI: boolean = false,
   onLog?: (message: string) => void
 ): Promise<ReconciliationResult> => {
   const log = (msg: string) => {
@@ -33,18 +31,6 @@ export const reconcileTransactions = async (
   };
 
   log(`=== Starting reconciliation with ${bankTransactions.length} bank txns and ${accountTransactions.length} account txns ===`);
-  log(`AI Matching: ${useAI ? 'ENABLED' : 'DISABLED'}`);
-  log(`AI Model Ready: ${isModelReady()}`);
-
-  log(`\n📊 BANK TRANSACTIONS:`);
-  bankTransactions.forEach((t, i) => {
-    log(`  ${i + 1}. "${t.description}" | $${t.amount} | ${t.date}`);
-  });
-
-  log(`\n📊 ACCOUNT TRANSACTIONS:`);
-  accountTransactions.forEach((t, i) => {
-    log(`  ${i + 1}. "${t.description}" | $${t.amount} | ${t.date}`);
-  });
 
   const matched: ReconciliationResult['matched'] = [];
   const unmatchedBank: Transaction[] = [...bankTransactions];
@@ -54,14 +40,12 @@ export const reconcileTransactions = async (
 
   for (let i = unmatchedBank.length - 1; i >= 0; i--) {
     const bankTxn = unmatchedBank[i];
-    log(`\n--- Checking bank txn: "${bankTxn.description}" ($${bankTxn.amount}) ${bankTxn.date} ---`);
 
     for (let j = unmatchedAccounts.length - 1; j >= 0; j--) {
       const accountTxn = unmatchedAccounts[j];
 
-      const matchResult = await isMatch(bankTxn, accountTxn, tolerance, useAI, log);
+      const matchResult = isMatch(bankTxn, accountTxn, tolerance, log);
       if (matchResult) {
-        log(`✅ FOUND MATCH!`);
         matched.push({
           bankAmount: bankTxn.amount,
           accountAmount: accountTxn.amount,
@@ -104,13 +88,12 @@ export const reconcileTransactions = async (
   };
 };
 
-const isMatch = async (
+const isMatch = (
   bankTxn: Transaction,
   accountTxn: Transaction,
   tolerance: number,
-  useAI: boolean = false,
   log?: (message: string) => void
-): Promise<boolean> => {
+): boolean => {
   const amountMatch = Math.abs(Math.abs(bankTxn.amount) - Math.abs(accountTxn.amount)) <= tolerance;
 
   if (!amountMatch) {
@@ -126,53 +109,21 @@ const isMatch = async (
     }
   }
 
-  let descriptionSimilarity: number;
+  const descriptionSimilarity = calculateSimilarity(
+    bankTxn.description,
+    accountTxn.description
+  );
 
-  if (useAI && isModelReady()) {
-    descriptionSimilarity = await calculateAISimilarity(
-      bankTxn.description,
-      accountTxn.description
-    );
+  if (dateMatch && amountMatch && descriptionSimilarity > 0.05) {
+    return true;
+  }
 
-    log?.(`AI Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
-    log?.(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
+  if (dateMatch && descriptionSimilarity > 0.45) {
+    return true;
+  }
 
-    if (dateMatch && amountMatch && descriptionSimilarity > 0.25) {
-      return true;
-    }
-
-    if (dateMatch && descriptionSimilarity > 0.45) {
-      return true;
-    }
-
-    if (amountMatch && descriptionSimilarity > 0.55) {
-      return true;
-    }
-  } else {
-    descriptionSimilarity = calculateSimilarity(
-      bankTxn.description,
-      accountTxn.description
-    );
-
-    log?.(`Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
-    log?.(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
-
-    if (dateMatch && amountMatch) {
-      if (descriptionSimilarity > 0.05) {
-        log?.(`✓ MATCHED (date + amount + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
-        return true;
-      }
-    }
-
-    if (dateMatch && descriptionSimilarity > 0.45) {
-      log?.(`✓ MATCHED (date + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
-      return true;
-    }
-
-    if (amountMatch && descriptionSimilarity > 0.55) {
-      log?.(`✓ MATCHED (amount + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
-      return true;
-    }
+  if (amountMatch && descriptionSimilarity > 0.55) {
+    return true;
   }
 
   return false;

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, FileText, Download, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, FileText, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { parseFile } from '../utils/fileParser';
 import { reconcileTransactions, ReconciliationResult } from '../utils/reconciliation';
-import { initializeAIModel, isModelReady } from '../utils/aiMatcher';
 
 const formatDateUK = (dateStr: string): string => {
   const date = new Date(dateStr);
@@ -18,33 +17,8 @@ export const BankReconciliation: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ReconciliationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [useAI, setUseAI] = useState(false);
-  const [aiModelLoading, setAiModelLoading] = useState(false);
-  const [aiModelReady, setAiModelReady] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
-  useEffect(() => {
-    const loadModel = async () => {
-      if (useAI && !isModelReady()) {
-        setAiModelLoading(true);
-        setDebugLogs(prev => [...prev, 'Starting AI model download (this may take a minute)...']);
-        try {
-          await initializeAIModel();
-          setAiModelReady(true);
-          setDebugLogs(prev => [...prev, 'AI model loaded successfully!']);
-        } catch (err) {
-          const errorMsg = err instanceof Error ? err.message : String(err);
-          setDebugLogs(prev => [...prev, `AI model failed to load: ${errorMsg}`]);
-          setUseAI(false);
-        } finally {
-          setAiModelLoading(false);
-        }
-      } else if (isModelReady()) {
-        setAiModelReady(true);
-      }
-    };
-    loadModel();
-  }, [useAI]);
 
   const handleFileUpload = (file: File | null, type: 'bank' | 'accounts') => {
     if (type === 'bank') {
@@ -78,7 +52,6 @@ export const BankReconciliation: React.FC = () => {
       const reconciliationResult = await reconcileTransactions(
         bankTransactions,
         accountTransactions,
-        useAI,
         (log) => setDebugLogs(prev => [...prev, log])
       );
       setResult(reconciliationResult);
@@ -161,52 +134,15 @@ export const BankReconciliation: React.FC = () => {
           )}
 
           <div className="flex flex-col items-center space-y-4">
-            <div className="flex items-center space-x-4">
-              <button
-                type="button"
-                onClick={() => setUseAI(!useAI)}
-                disabled={processing || aiModelLoading}
-                className="flex items-center space-x-3 cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    useAI ? 'bg-l1-accent' : 'bg-l1-border'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      useAI ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Sparkles size={18} className={useAI ? 'text-l1-accent' : 'text-l1-text-secondary'} />
-                  <span className="font-medium text-l1-text-primary group-hover:text-l1-accent transition-colors">
-                    Use AI Matching
-                  </span>
-                </div>
-              </button>
-              {aiModelLoading && (
-                <div className="flex items-center space-x-2 text-l1-text-secondary text-sm">
-                  <Loader2 className="animate-spin" size={16} />
-                  <span>Loading AI model...</span>
-                </div>
-              )}
-              {aiModelReady && useAI && (
-                <div className="text-green-500 text-sm font-medium">
-                  AI Ready
-                </div>
-              )}
-            </div>
             <button
               onClick={processReconciliation}
-              disabled={!bankFile || !accountsFile || processing || (useAI && aiModelLoading)}
+              disabled={!bankFile || !accountsFile || processing}
               className="px-8 py-3 bg-l1-accent text-white rounded-lg font-medium hover:bg-l1-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
             >
               {processing ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  <span>{useAI ? 'AI Processing...' : 'Processing...'}</span>
+                  <span>Processing...</span>
                 </>
               ) : (
                 <>
