@@ -150,20 +150,14 @@ export const BankReconciliation: React.FC = () => {
 
           <div className="flex flex-col items-center space-y-4">
             <div className="flex items-center space-x-4">
-              <div
-                className="flex items-center space-x-3 cursor-pointer group"
-                onClick={() => !processing && !aiModelLoading && setUseAI(!useAI)}
+              <button
+                type="button"
+                onClick={() => setUseAI(!useAI)}
+                disabled={processing || aiModelLoading}
+                className="flex items-center space-x-3 cursor-pointer group disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={useAI}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setUseAI(!useAI);
-                  }}
-                  disabled={processing || aiModelLoading}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-l1-accent focus:ring-offset-2 focus:ring-offset-l1-background disabled:opacity-50 disabled:cursor-not-allowed ${
+                <div
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     useAI ? 'bg-l1-accent' : 'bg-l1-border'
                   }`}
                 >
@@ -172,14 +166,14 @@ export const BankReconciliation: React.FC = () => {
                       useAI ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
-                </button>
-                <div className="flex items-center space-x-2 pointer-events-none">
+                </div>
+                <div className="flex items-center space-x-2">
                   <Sparkles size={18} className={useAI ? 'text-l1-accent' : 'text-l1-text-secondary'} />
                   <span className="font-medium text-l1-text-primary group-hover:text-l1-accent transition-colors">
                     Use AI Matching
                   </span>
                 </div>
-              </div>
+              </button>
               {aiModelLoading && (
                 <div className="flex items-center space-x-2 text-l1-text-secondary text-sm">
                   <Loader2 className="animate-spin" size={16} />

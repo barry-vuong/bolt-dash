@@ -110,19 +110,27 @@ const isMatch = async (
       bankTxn.description,
       accountTxn.description
     );
+
+    if (dateMatch && descriptionSimilarity > 0.5) {
+      return true;
+    }
+
+    if (amountMatch && descriptionSimilarity > 0.65) {
+      return true;
+    }
   } else {
     descriptionSimilarity = calculateSimilarity(
       bankTxn.description.toLowerCase(),
       accountTxn.description.toLowerCase()
     );
-  }
 
-  if (dateMatch && descriptionSimilarity > 0.6) {
-    return true;
-  }
+    if (dateMatch && descriptionSimilarity > 0.6) {
+      return true;
+    }
 
-  if (amountMatch && descriptionSimilarity > 0.8) {
-    return true;
+    if (amountMatch && descriptionSimilarity > 0.8) {
+      return true;
+    }
   }
 
   return false;
