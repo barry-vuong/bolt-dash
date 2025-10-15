@@ -1,33 +1,23 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Menu, X, MessageCircle, Brain, Bot, MessageSquare } from 'lucide-react';
-import { agents } from '../data/agents';
-import { wizards } from '../data/wizards';
-import { SidebarItem } from './SidebarItem';
+import { ChevronDown, ChevronRight, Menu, X, Calculator } from 'lucide-react';
 
 interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  selectedId: string | null;
-  selectedType: 'agent' | 'wizard' | null;
-  onSelect: (id: string, type: 'agent' | 'wizard') => void;
+  selectedTool: string;
+  onSelectTool: (tool: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
-  selectedId,
-  selectedType,
-  onSelect
+  selectedTool,
+  onSelectTool
 }) => {
-  const [agentsExpanded, setAgentsExpanded] = useState(true);
-  const [wizardsExpanded, setWizardsExpanded] = useState(true);
-  const [toolsExpanded, setToolsExpanded] = useState(false);
+  const [toolsExpanded, setToolsExpanded] = useState(true);
 
   const tools = [
-    { id: 'slack', name: 'Slack', icon: 'MessageCircle', description: 'Team communication and collaboration' },
-    { id: 'pigment-ai', name: 'Pigment AI', icon: 'Brain', description: 'AI-powered business planning and analytics' },
-    { id: 'chatgpt', name: 'ChatGPT', icon: 'Bot', description: 'AI assistant for various tasks and queries' },
-    { id: 'meeting-summary', name: 'Meeting Summary', icon: 'MessageSquare', description: 'Upload transcripts/notes and receive structured outputs' }
+    { id: 'bank-reconciliation', name: 'Bank Reconciliation', icon: 'Calculator', description: 'Upload bank and accounts files to reconcile transactions' }
   ];
 
   return (
@@ -66,82 +56,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto">
         {!isCollapsed && (
           <div className="p-4 space-y-6">
-            {/* Agents Section */}
-            <div>
-              <button
-                onClick={() => setAgentsExpanded(!agentsExpanded)}
-                className="flex items-center justify-between w-full text-left mb-3 hover:bg-l1-primary p-2 rounded-lg transition-colors"
-              >
-                <span className="font-medium text-l1-text-primary">Agents</span>
-                {agentsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </button>
-              
-              {agentsExpanded && (
-                <div className="space-y-1 ml-2">
-                  {agents.map((agent) => (
-                    <SidebarItem
-                      key={agent.id}
-                      item={agent}
-                      isSelected={selectedId === agent.id && selectedType === 'agent'}
-                      onClick={() => onSelect(agent.id, 'agent')}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Wizards Section */}
-            <div>
-              <button
-                onClick={() => setWizardsExpanded(!wizardsExpanded)}
-                className="flex items-center justify-between w-full text-left mb-3 hover:bg-l1-primary p-2 rounded-lg transition-colors"
-              >
-                <span className="font-medium text-l1-text-primary">Wizards</span>
-                {wizardsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              </button>
-              
-              {wizardsExpanded && (
-                <div className="space-y-1 ml-2">
-                  {wizards.map((wizard) => (
-                    <SidebarItem
-                      key={wizard.id}
-                      item={wizard}
-                      isSelected={selectedId === wizard.id && selectedType === 'wizard'}
-                      onClick={() => onSelect(wizard.id, 'wizard')}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Tools Section */}
             <div>
               <button
-                onClick={() => {
-                  setToolsExpanded(!toolsExpanded);
-                  if (!toolsExpanded) {
-                    setAgentsExpanded(false);
-                    setWizardsExpanded(false);
-                  }
-                }}
+                onClick={() => setToolsExpanded(!toolsExpanded)}
                 className="flex items-center justify-between w-full text-left mb-3 hover:bg-l1-primary p-2 rounded-lg transition-colors"
               >
                 <span className="font-medium text-l1-text-primary">Tools</span>
                 {toolsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
               </button>
-              
+
               {toolsExpanded && (
                 <div className="space-y-1 ml-2">
                   {tools.map((tool) => (
                     <button
                       key={tool.id}
-                      className="w-full text-left p-3 rounded-lg transition-all duration-200 hover:bg-l1-primary text-l1-text-primary flex items-start space-x-3"
+                      onClick={() => onSelectTool(tool.id)}
+                      className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-start space-x-3 ${
+                        selectedTool === tool.id
+                          ? 'bg-l1-accent/20 text-l1-text-primary'
+                          : 'hover:bg-l1-primary text-l1-text-primary'
+                      }`}
                     >
                       <div className="flex-shrink-0">
-                        {tool.icon === 'MessageCircle' && <MessageCircle size={20} />}
-                        {tool.icon === 'Brain' && <Brain size={20} />}
-                        {tool.icon === 'Bot' && <Bot size={20} />}
-                        {tool.icon === 'MessageSquare' && <MessageSquare size={20} />}
+                        <Calculator size={20} className={selectedTool === tool.id ? 'text-l1-accent' : ''} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm">{tool.name}</div>
@@ -159,39 +97,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {isCollapsed && (
           <div className="p-2 space-y-2">
-            {/* Collapsed view - show only icons */}
-            {agents.map((agent) => (
-              <SidebarItem
-                key={agent.id}
-                item={agent}
-                isSelected={selectedId === agent.id && selectedType === 'agent'}
-                onClick={() => onSelect(agent.id, 'agent')}
-                collapsed
-              />
-            ))}
-            <div className="border-t border-l1-border my-2"></div>
-            {wizards.map((wizard) => (
-              <SidebarItem
-                key={wizard.id}
-                item={wizard}
-                isSelected={selectedId === wizard.id && selectedType === 'wizard'}
-                onClick={() => onSelect(wizard.id, 'wizard')}
-                collapsed
-              />
-            ))}
-            <div className="border-t border-l1-border my-2"></div>
             {tools.map((tool) => (
               <button
                 key={tool.id}
-                className="w-full p-3 rounded-lg transition-all duration-200 hover:bg-l1-primary text-l1-text-primary flex justify-center"
+                onClick={() => onSelectTool(tool.id)}
+                className={`w-full p-3 rounded-lg transition-all duration-200 flex justify-center ${
+                  selectedTool === tool.id
+                    ? 'bg-l1-accent/20 text-l1-accent'
+                    : 'hover:bg-l1-primary text-l1-text-primary'
+                }`}
                 title={tool.name}
               >
-                <div className="flex-shrink-0">
-                  {tool.icon === 'MessageCircle' && <MessageCircle size={20} />}
-                  {tool.icon === 'Brain' && <Brain size={20} />}
-                  {tool.icon === 'Bot' && <Bot size={20} />}
-                  {tool.icon === 'MessageSquare' && <MessageSquare size={20} />}
-                </div>
+                <Calculator size={20} />
               </button>
             ))}
           </div>
