@@ -1,0 +1,8 @@
+Date,Description,Amount,Balance
+01/10/2025,Deposit - Client A,5000,5000
+03/10/2025,POS Purchase - Office Supplies,-250.45,4749.55
+05/10/2025,Bank Fee,-15,4734.55
+06/10/2025,Deposit - Client B,3000,7734.55
+08/10/2025,Withdrawal - Rent,-1200,6534.55
+09/10/2025,POS Purchase - Travel,-450.75,6083.8
+10/10/2026,Test,400,5683.8
