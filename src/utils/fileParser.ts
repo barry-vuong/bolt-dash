@@ -127,6 +127,19 @@ const extractAmount = (row: Record<string, any>): number => {
   const debitKey = Object.keys(row).find(k => k.toLowerCase() === 'debit');
   const creditKey = Object.keys(row).find(k => k.toLowerCase() === 'credit');
 
+  if (debitKey !== undefined && creditKey !== undefined) {
+    const debitAmount = parseAmount(row[debitKey]);
+    const creditAmount = parseAmount(row[creditKey]);
+
+    if (debitAmount > 0) {
+      return -Math.abs(debitAmount);
+    }
+    if (creditAmount > 0) {
+      return Math.abs(creditAmount);
+    }
+    return 0;
+  }
+
   if (debitKey && row[debitKey]) {
     return -Math.abs(parseAmount(row[debitKey]));
   }
