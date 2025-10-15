@@ -27,17 +27,21 @@ export const BankReconciliation: React.FC = () => {
     const loadModel = async () => {
       if (!isModelReady()) {
         setAiModelLoading(true);
+        setDebugLogs(prev => [...prev, 'Starting AI model download (this may take a minute)...']);
         try {
           await initializeAIModel();
           setAiModelReady(true);
+          setDebugLogs(prev => [...prev, 'AI model loaded successfully!']);
         } catch (err) {
-          console.error('Failed to load AI model:', err);
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          setDebugLogs(prev => [...prev, `AI model failed to load: ${errorMsg}`]);
           setUseAI(false);
         } finally {
           setAiModelLoading(false);
         }
       } else {
         setAiModelReady(true);
+        setDebugLogs(prev => [...prev, 'AI model already loaded!']);
       }
     };
     loadModel();
