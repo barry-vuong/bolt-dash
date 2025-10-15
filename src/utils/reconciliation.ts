@@ -138,15 +138,22 @@ const isMatch = async (
     }
   } else {
     descriptionSimilarity = calculateSimilarity(
-      bankTxn.description.toLowerCase(),
-      accountTxn.description.toLowerCase()
+      bankTxn.description,
+      accountTxn.description
     );
 
-    if (dateMatch && descriptionSimilarity > 0.6) {
+    log?.(`Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
+    log?.(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
+
+    if (dateMatch && amountMatch && descriptionSimilarity > 0.3) {
       return true;
     }
 
-    if (amountMatch && descriptionSimilarity > 0.8) {
+    if (dateMatch && descriptionSimilarity > 0.5) {
+      return true;
+    }
+
+    if (amountMatch && descriptionSimilarity > 0.6) {
       return true;
     }
   }
@@ -167,13 +174,42 @@ const isDateClose = (date1: string, date2: string, daysTolerance: number): boole
 const calculateSimilarity = (str1: string, str2: string): number => {
   if (str1 === str2) return 1;
 
-  const longer = str1.length > str2.length ? str1 : str2;
-  const shorter = str1.length > str2.length ? str2 : str1;
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
-  if (longer.length === 0) return 1.0;
+  const n1 = normalize(str1);
+  const n2 = normalize(str2);
 
-  const editDistance = levenshteinDistance(longer, shorter);
-  return (longer.length - editDistance) / longer.length;
+  if (n1 === n2) return 1;
+
+  const commonWords = new Set(['the', 'and', 'or', 'to', 'from', 'in', 'at', 'on', 'for', 'of', 'a', 'an']);
+
+  const words1 = n1.split(' ').filter(w => w.length > 2 && !commonWords.has(w));
+  const words2 = n2.split(' ').filter(w => w.length > 2 && !commonWords.has(w));
+
+  if (words1.length === 0 || words2.length === 0) {
+    const editDistance = levenshteinDistance(n1, n2);
+    return (Math.max(n1.length, n2.length) - editDistance) / Math.max(n1.length, n2.length);
+  }
+
+  let matchCount = 0;
+  for (const w1 of words1) {
+    for (const w2 of words2) {
+      if (w1 === w2) {
+        matchCount += 1;
+      } else if (w1.includes(w2) || w2.includes(w1)) {
+        matchCount += 0.7;
+      } else if (levenshteinDistance(w1, w2) <= 2) {
+        matchCount += 0.5;
+      }
+    }
+  }
+
+  const wordScore = (2 * matchCount) / (words1.length + words2.length);
+
+  const editDistance = levenshteinDistance(n1, n2);
+  const editScore = (Math.max(n1.length, n2.length) - editDistance) / Math.max(n1.length, n2.length);
+
+  return Math.max(wordScore, editScore);
 };
 
 const levenshteinDistance = (str1: string, str2: string): number => {
