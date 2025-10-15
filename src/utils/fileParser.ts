@@ -115,15 +115,6 @@ const extractDescription = (row: Record<string, any>): string => {
 };
 
 const extractAmount = (row: Record<string, any>): number => {
-  const amountFields = ['amount', 'value', 'transaction_amount', 'transactionamount', 'debit', 'credit', 'balance'];
-
-  for (const field of amountFields) {
-    const key = Object.keys(row).find(k => k.toLowerCase() === field);
-    if (key && row[key] !== undefined && row[key] !== null && row[key] !== '') {
-      return parseAmount(row[key]);
-    }
-  }
-
   const debitKey = Object.keys(row).find(k => k.toLowerCase() === 'debit');
   const creditKey = Object.keys(row).find(k => k.toLowerCase() === 'credit');
 
@@ -140,11 +131,16 @@ const extractAmount = (row: Record<string, any>): number => {
     return 0;
   }
 
-  if (debitKey && row[debitKey]) {
-    return -Math.abs(parseAmount(row[debitKey]));
-  }
-  if (creditKey && row[creditKey]) {
-    return Math.abs(parseAmount(row[creditKey]));
+  const amountFields = ['amount', 'value', 'transaction_amount', 'transactionamount', 'balance'];
+
+  for (const field of amountFields) {
+    const key = Object.keys(row).find(k => k.toLowerCase() === field);
+    if (key && row[key] !== undefined && row[key] !== null && row[key] !== '') {
+      const amount = parseAmount(row[key]);
+      if (amount !== 0) {
+        return amount;
+      }
+    }
   }
 
   const values = Object.values(row);
