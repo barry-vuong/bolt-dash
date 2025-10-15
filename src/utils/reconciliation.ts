@@ -24,11 +24,17 @@ export interface ReconciliationResult {
 export const reconcileTransactions = async (
   bankTransactions: Transaction[],
   accountTransactions: Transaction[],
-  useAI: boolean = false
+  useAI: boolean = false,
+  onLog?: (message: string) => void
 ): Promise<ReconciliationResult> => {
-  console.log(`=== Starting reconciliation with ${bankTransactions.length} bank txns and ${accountTransactions.length} account txns ===`);
-  console.log(`AI Matching: ${useAI ? 'ENABLED' : 'DISABLED'}`);
-  console.log(`AI Model Ready: ${isModelReady()}`);
+  const log = (msg: string) => {
+    console.log(msg);
+    onLog?.(msg);
+  };
+
+  log(`=== Starting reconciliation with ${bankTransactions.length} bank txns and ${accountTransactions.length} account txns ===`);
+  log(`AI Matching: ${useAI ? 'ENABLED' : 'DISABLED'}`);
+  log(`AI Model Ready: ${isModelReady()}`);
 
   const matched: ReconciliationResult['matched'] = [];
   const unmatchedBank: Transaction[] = [...bankTransactions];
@@ -42,7 +48,7 @@ export const reconcileTransactions = async (
     for (let j = unmatchedAccounts.length - 1; j >= 0; j--) {
       const accountTxn = unmatchedAccounts[j];
 
-      const matchResult = await isMatch(bankTxn, accountTxn, tolerance, useAI);
+      const matchResult = await isMatch(bankTxn, accountTxn, tolerance, useAI, log);
       if (matchResult) {
         matched.push({
           bankAmount: bankTxn.amount,
@@ -90,7 +96,8 @@ const isMatch = async (
   bankTxn: Transaction,
   accountTxn: Transaction,
   tolerance: number,
-  useAI: boolean = false
+  useAI: boolean = false,
+  log?: (message: string) => void
 ): Promise<boolean> => {
   const amountMatch = Math.abs(Math.abs(bankTxn.amount) - Math.abs(accountTxn.amount)) <= tolerance;
 
@@ -115,8 +122,8 @@ const isMatch = async (
       accountTxn.description
     );
 
-    console.log(`AI Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
-    console.log(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
+    log?.(`AI Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
+    log?.(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
 
     if (dateMatch && amountMatch && descriptionSimilarity > 0.25) {
       return true;
