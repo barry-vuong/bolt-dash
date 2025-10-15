@@ -26,6 +26,10 @@ export const reconcileTransactions = async (
   accountTransactions: Transaction[],
   useAI: boolean = false
 ): Promise<ReconciliationResult> => {
+  console.log(`=== Starting reconciliation with ${bankTransactions.length} bank txns and ${accountTransactions.length} account txns ===`);
+  console.log(`AI Matching: ${useAI ? 'ENABLED' : 'DISABLED'}`);
+  console.log(`AI Model Ready: ${isModelReady()}`);
+
   const matched: ReconciliationResult['matched'] = [];
   const unmatchedBank: Transaction[] = [...bankTransactions];
   const unmatchedAccounts: Transaction[] = [...accountTransactions];
