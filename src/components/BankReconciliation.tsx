@@ -3,6 +3,14 @@ import { Upload, FileText, Download, Loader2, CheckCircle, AlertCircle } from 'l
 import { parseFile } from '../utils/fileParser';
 import { reconcileTransactions, ReconciliationResult } from '../utils/reconciliation';
 
+const formatDateUK = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 export const BankReconciliation: React.FC = () => {
   const [bankFile, setBankFile] = useState<File | null>(null);
   const [accountsFile, setAccountsFile] = useState<File | null>(null);
@@ -66,17 +74,17 @@ export const BankReconciliation: React.FC = () => {
 
     csv += '\nMATCHED TRANSACTIONS\n';
     data.matched.forEach(item => {
-      csv += `Matched,${item.date},"${item.description}",${item.bankAmount}\n`;
+      csv += `Matched,${formatDateUK(item.date)},"${item.description}",${item.bankAmount}\n`;
     });
 
     csv += '\nUNMATCHED BANK TRANSACTIONS\n';
     data.unmatched.bank.forEach(item => {
-      csv += `Unmatched Bank,${item.date},"${item.description}",${item.amount}\n`;
+      csv += `Unmatched Bank,${formatDateUK(item.date)},"${item.description}",${item.amount}\n`;
     });
 
     csv += '\nUNMATCHED ACCOUNTS TRANSACTIONS\n';
     data.unmatched.accounts.forEach(item => {
-      csv += `Unmatched Accounts,${item.date},"${item.description}",${item.amount}\n`;
+      csv += `Unmatched Accounts,${formatDateUK(item.date)},"${item.description}",${item.amount}\n`;
     });
 
     return csv;
@@ -311,7 +319,7 @@ const ResultSection: React.FC<ResultSectionProps> = ({ title, items, type }) => 
             <div key={idx} className="p-4 flex items-center justify-between hover:bg-l1-primary/30 transition-colors">
               <div className="flex-1">
                 <div className="font-medium text-l1-text-primary">{item.description}</div>
-                <div className="text-sm text-l1-text-secondary mt-1">{item.date}</div>
+                <div className="text-sm text-l1-text-secondary mt-1">{formatDateUK(item.date)}</div>
               </div>
               <div className="text-lg font-semibold text-l1-text-primary">
                 ${item.amount.toFixed(2)}

@@ -187,9 +187,25 @@ const normalizeDate = (dateValue: any): string => {
     return date.toISOString().split('T')[0];
   }
 
-  const dateStr = String(dateValue);
-  const date = new Date(dateStr);
+  const dateStr = String(dateValue).trim();
 
+  const ddmmyyyyPattern = /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/;
+  const match = dateStr.match(ddmmyyyyPattern);
+
+  if (match) {
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+
+    if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    }
+  }
+
+  const date = new Date(dateStr);
   if (!isNaN(date.getTime())) {
     return date.toISOString().split('T')[0];
   }
