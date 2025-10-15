@@ -153,17 +153,6 @@ export const BankReconciliation: React.FC = () => {
             </button>
           </div>
 
-          {debugLogs.length > 0 && (
-            <div className="bg-gray-900 rounded-lg border border-gray-700 p-4 max-h-96 overflow-y-auto">
-              <h3 className="text-sm font-semibold text-gray-300 mb-3">Debug Logs</h3>
-              <div className="space-y-1 font-mono text-xs">
-                {debugLogs.map((log, idx) => (
-                  <div key={idx} className="text-green-400">{log}</div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {result && (
             <div className="space-y-6">
               <div className="bg-l1-surface rounded-lg border border-l1-border p-6">
@@ -223,6 +212,17 @@ export const BankReconciliation: React.FC = () => {
                     type="error"
                   />
                 </div>
+              </div>
+            </div>
+          )}
+
+          {debugLogs.length > 0 && (
+            <div className="bg-gray-900 rounded-lg border border-gray-700 p-4 max-h-96 overflow-y-auto">
+              <h3 className="text-sm font-semibold text-gray-300 mb-3">Debug Logs</h3>
+              <div className="space-y-1 font-mono text-xs">
+                {debugLogs.map((log, idx) => (
+                  <div key={idx} className="text-green-400">{log}</div>
+                ))}
               </div>
             </div>
           )}
