@@ -1,8 +1,10 @@
-Date,Transaction_ID,Description,Debit,Credit,Balance
-01/10/2025,TX1001,Client A Payment,0,5000,5000
-03/10/2025,TX1002,Office Supplies Purchase,250.45,0,4749.55
-05/10/2025,TX1003,Service Fee,15,0,4734.55
-06/10/2025,TX1004,Client B Payment,0,3000,7734.55
-08/10/2025,TX1005,Office Rent,1200,0,6534.55
-09/10/2025,TX1006,Flight Booking,450.75,0,6083.8
-10/10/2026,TX1007,Test,400,0,5683.8
+Date,Transaction_ID,Description,Debit,Credit,Currency
+01/10/2025,TX1001,Client A Payment,0.0,3745.05,GBP
+01/10/2025,TX1002,Vendor Z Refund,0.0,130.58,GBP
+01/10/2025,TX1003,CloudCo Subscription September,250.0,0.0,GBP
+01/10/2025,TX1004,Card Processing Fee,74.90,0.0,GBP
+30/09/2025,TX1005,Consulting Income INV-778,0.0,2611.50,GBP
+30/09/2025,TX1006,Chargeback Order 123,112.35,0.0,GBP
+01/10/2025,TX1007,Supplier X Wire,1200.0,0.0,EUR
+01/10/2025,TX1008,Client B Receipt,0.0,2200.0,GBP
+01/10/2025,TX1009,ATM Cash Withdrawal,50.0,0.0,GBP

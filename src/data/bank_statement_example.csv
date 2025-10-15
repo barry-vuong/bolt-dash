@@ -1,8 +1,10 @@
-Date,Description,Amount,Balance
-01/10/2025,Deposit - Client A,5000,5000
-03/10/2025,POS Purchase - Office Supplies,-250.45,4749.55
-05/10/2025,Bank Fee,-15,4734.55
-06/10/2025,Deposit - Client B,3000,7734.55
-08/10/2025,Withdrawal - Rent,-1200,6534.55
-09/10/2025,POS Purchase - Travel,-450.75,6083.8
-10/10/2026,Test,400,5683.8
+Date,Description,Amount,Currency,Type
+01/10/2025,Deposit - Client A (USD),5000.0,USD,deposit
+01/10/2025,Refund from Vendor Z (EUR),150.0,EUR,deposit
+01/10/2025,Subscription - CloudCo (GBP),-250.0,GBP,withdrawal
+01/10/2025,Card Fee (USD),-99.99,USD,debit
+30/09/2025,Consulting Invoice #INV-778 (EUR),3000.0,EUR,deposit
+30/09/2025,Chargeback - Order 123 (USD),-150.0,USD,withdrawal
+01/10/2025,Wire to Supplier X (EUR),-1200.0,EUR,withdrawal
+01/10/2025,Deposit - Client B (GBP),2200.0,GBP,deposit
+01/10/2025,ATM Withdrawal (GBP),-50.0,GBP,withdrawal
