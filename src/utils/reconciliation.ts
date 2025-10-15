@@ -111,11 +111,11 @@ const isMatch = async (
       accountTxn.description
     );
 
-    if (dateMatch && descriptionSimilarity > 0.5) {
+    if (dateMatch && descriptionSimilarity > 0.45) {
       return true;
     }
 
-    if (amountMatch && descriptionSimilarity > 0.65) {
+    if (amountMatch && descriptionSimilarity > 0.55) {
       return true;
     }
   } else {

@@ -33,9 +33,29 @@ export const isModelReady = (): boolean => {
 const normalizeDescription = (desc: string): string => {
   return desc
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/[^a-z0-9\s-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+};
+
+const hasCommonKeywords = (desc1: string, desc2: string): boolean => {
+  const keywords1 = new Set(
+    normalizeDescription(desc1)
+      .split(' ')
+      .filter(word => word.length > 3)
+  );
+  const keywords2 = new Set(
+    normalizeDescription(desc2)
+      .split(' ')
+      .filter(word => word.length > 3)
+  );
+
+  for (const keyword of keywords1) {
+    if (keywords2.has(keyword)) {
+      return true;
+    }
+  }
+  return false;
 };
 
 export const calculateAISimilarity = async (desc1: string, desc2: string): Promise<number> => {
@@ -53,7 +73,11 @@ export const calculateAISimilarity = async (desc1: string, desc2: string): Promi
     const output1 = await featureExtractor(normalized1, { pooling: 'mean', normalize: true });
     const output2 = await featureExtractor(normalized2, { pooling: 'mean', normalize: true });
 
-    const similarity = cos_sim(output1.data, output2.data);
+    let similarity = cos_sim(output1.data, output2.data);
+
+    if (hasCommonKeywords(desc1, desc2)) {
+      similarity = similarity * 1.15;
+    }
 
     return Math.max(0, Math.min(1, similarity));
   } catch (error) {
