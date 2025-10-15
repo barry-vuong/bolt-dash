@@ -40,12 +40,14 @@ export const reconcileTransactions = async (
 
   for (let i = unmatchedBank.length - 1; i >= 0; i--) {
     const bankTxn = unmatchedBank[i];
+    log(`\n--- Checking bank txn: "${bankTxn.description}" ($${bankTxn.amount}) ${bankTxn.date} ---`);
 
     for (let j = unmatchedAccounts.length - 1; j >= 0; j--) {
       const accountTxn = unmatchedAccounts[j];
 
       const matchResult = isMatch(bankTxn, accountTxn, tolerance, log);
       if (matchResult) {
+        log(`✅ FOUND MATCH!`);
         matched.push({
           bankAmount: bankTxn.amount,
           accountAmount: accountTxn.amount,
@@ -114,15 +116,21 @@ const isMatch = (
     accountTxn.description
   );
 
+  log?.(`Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
+  log?.(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
+
   if (dateMatch && amountMatch && descriptionSimilarity > 0.05) {
+    log?.(`✓ MATCHED (date + amount + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
     return true;
   }
 
   if (dateMatch && descriptionSimilarity > 0.45) {
+    log?.(`✓ MATCHED (date + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
     return true;
   }
 
   if (amountMatch && descriptionSimilarity > 0.55) {
+    log?.(`✓ MATCHED (amount + ${(descriptionSimilarity * 100).toFixed(1)}% similarity)`);
     return true;
   }
 
