@@ -44,12 +44,14 @@ export const reconcileTransactions = async (
 
   for (let i = unmatchedBank.length - 1; i >= 0; i--) {
     const bankTxn = unmatchedBank[i];
+    log(`\n--- Checking bank txn: "${bankTxn.description}" ($${bankTxn.amount}) ${bankTxn.date} ---`);
 
     for (let j = unmatchedAccounts.length - 1; j >= 0; j--) {
       const accountTxn = unmatchedAccounts[j];
 
       const matchResult = await isMatch(bankTxn, accountTxn, tolerance, useAI, log);
       if (matchResult) {
+        log(`✅ FOUND MATCH!`);
         matched.push({
           bankAmount: bankTxn.amount,
           accountAmount: accountTxn.amount,
