@@ -1,25 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, FileText, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-
-interface ReconciliationResult {
-  matched: Array<{
-    bankAmount: number;
-    accountAmount: number;
-    description: string;
-    date: string;
-  }>;
-  unmatched: {
-    bank: Array<{ amount: number; description: string; date: string }>;
-    accounts: Array<{ amount: number; description: string; date: string }>;
-  };
-  summary: {
-    totalMatched: number;
-    totalUnmatched: number;
-    matchedAmount: number;
-    unmatchedBankAmount: number;
-    unmatchedAccountsAmount: number;
-  };
-}
+import { parseFile } from '../utils/fileParser';
+import { reconcileTransactions, ReconciliationResult } from '../utils/reconciliation';
 
 export const BankReconciliation: React.FC = () => {
   const [bankFile, setBankFile] = useState<File | null>(null);
@@ -45,35 +27,22 @@ export const BankReconciliation: React.FC = () => {
     setError(null);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const bankTransactions = await parseFile(bankFile);
+      const accountTransactions = await parseFile(accountsFile);
 
-      const mockResult: ReconciliationResult = {
-        matched: [
-          { bankAmount: 1250.00, accountAmount: 1250.00, description: 'Client Payment - Invoice #1234', date: '2025-10-10' },
-          { bankAmount: 750.50, accountAmount: 750.50, description: 'Vendor Payment - Service Fee', date: '2025-10-12' },
-          { bankAmount: 3200.00, accountAmount: 3200.00, description: 'Monthly Subscription Revenue', date: '2025-10-13' },
-        ],
-        unmatched: {
-          bank: [
-            { amount: 450.00, description: 'Bank Fee - Account Maintenance', date: '2025-10-11' },
-            { amount: 125.00, description: 'Interest Payment', date: '2025-10-14' },
-          ],
-          accounts: [
-            { amount: 890.00, description: 'Pending Invoice #1245', date: '2025-10-15' },
-          ]
-        },
-        summary: {
-          totalMatched: 3,
-          totalUnmatched: 3,
-          matchedAmount: 5200.50,
-          unmatchedBankAmount: 575.00,
-          unmatchedAccountsAmount: 890.00
-        }
-      };
+      if (bankTransactions.length === 0) {
+        throw new Error('No transactions found in bank file. Please check the file format.');
+      }
 
-      setResult(mockResult);
+      if (accountTransactions.length === 0) {
+        throw new Error('No transactions found in accounts file. Please check the file format.');
+      }
+
+      const reconciliationResult = reconcileTransactions(bankTransactions, accountTransactions);
+      setResult(reconciliationResult);
     } catch (err) {
-      setError('Failed to process reconciliation. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process reconciliation. Please try again.';
+      setError(errorMessage);
     } finally {
       setProcessing(false);
     }
