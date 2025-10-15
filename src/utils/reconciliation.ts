@@ -88,7 +88,7 @@ const isMatch = async (
   tolerance: number,
   useAI: boolean = false
 ): Promise<boolean> => {
-  const amountMatch = Math.abs(bankTxn.amount - accountTxn.amount) <= tolerance;
+  const amountMatch = Math.abs(Math.abs(bankTxn.amount) - Math.abs(accountTxn.amount)) <= tolerance;
 
   if (!amountMatch) {
     return false;
