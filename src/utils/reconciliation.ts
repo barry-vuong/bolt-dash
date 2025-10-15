@@ -50,7 +50,8 @@ export const reconcileTransactions = async (
   const unmatchedBank: ConvertedTransaction[] = [...convertedBankTransactions];
   const unmatchedAccounts: ConvertedTransaction[] = [...convertedAccountTransactions];
 
-  const tolerance = 0.01;
+  const fixedTolerance = 0.05;
+  const percentageTolerance = 0.005;
 
   for (let i = unmatchedBank.length - 1; i >= 0; i--) {
     const bankTxn = unmatchedBank[i];
@@ -59,7 +60,7 @@ export const reconcileTransactions = async (
     for (let j = unmatchedAccounts.length - 1; j >= 0; j--) {
       const accountTxn = unmatchedAccounts[j];
 
-      const matchResult = isMatch(bankTxn, accountTxn, tolerance, log);
+      const matchResult = isMatch(bankTxn, accountTxn, fixedTolerance, percentageTolerance, log);
       if (matchResult) {
         log(`✅ FOUND MATCH!`);
         matched.push({
@@ -117,10 +118,18 @@ export const reconcileTransactions = async (
 const isMatch = (
   bankTxn: ConvertedTransaction,
   accountTxn: ConvertedTransaction,
-  tolerance: number,
+  fixedTolerance: number,
+  percentageTolerance: number,
   log?: (message: string) => void
 ): boolean => {
-  const amountMatch = Math.abs(Math.abs(bankTxn.convertedAmount) - Math.abs(accountTxn.convertedAmount)) <= tolerance;
+  const bankAbs = Math.abs(bankTxn.convertedAmount);
+  const accountAbs = Math.abs(accountTxn.convertedAmount);
+  const difference = Math.abs(bankAbs - accountAbs);
+
+  const maxAmount = Math.max(bankAbs, accountAbs);
+  const percentageDifference = maxAmount > 0 ? difference / maxAmount : 0;
+
+  const amountMatch = difference <= fixedTolerance || percentageDifference <= percentageTolerance;
 
   if (!amountMatch) {
     return false;
