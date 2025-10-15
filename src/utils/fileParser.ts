@@ -1,33 +1,36 @@
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { detectCurrencyFromSymbol, detectCurrencyFromCode } from './fxRates';
 
 export interface Transaction {
   date: string;
   description: string;
   amount: number;
   reference?: string;
+  currency: string;
+  originalAmount?: number;
 }
 
-export const parseFile = async (file: File): Promise<Transaction[]> => {
+export const parseFile = async (file: File, defaultCurrency: string = 'USD'): Promise<Transaction[]> => {
   const fileExtension = file.name.split('.').pop()?.toLowerCase();
 
   if (fileExtension === 'csv') {
-    return parseCSV(file);
+    return parseCSV(file, defaultCurrency);
   } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-    return parseExcel(file);
+    return parseExcel(file, defaultCurrency);
   } else {
     throw new Error('Unsupported file format. Please upload CSV or Excel files.');
   }
 };
 
-const parseCSV = (file: File): Promise<Transaction[]> => {
+const parseCSV = (file: File, defaultCurrency: string): Promise<Transaction[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
         try {
-          const transactions = normalizeData(results.data as Record<string, any>[]);
+          const transactions = normalizeData(results.data as Record<string, any>[], defaultCurrency);
           resolve(transactions);
         } catch (error) {
           reject(error);
@@ -40,7 +43,7 @@ const parseCSV = (file: File): Promise<Transaction[]> => {
   });
 };
 
-const parseExcel = async (file: File): Promise<Transaction[]> => {
+const parseExcel = async (file: File, defaultCurrency: string): Promise<Transaction[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -51,7 +54,7 @@ const parseExcel = async (file: File): Promise<Transaction[]> => {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
-        const transactions = normalizeData(jsonData as Record<string, any>[]);
+        const transactions = normalizeData(jsonData as Record<string, any>[], defaultCurrency);
         resolve(transactions);
       } catch (error) {
         reject(new Error(`Failed to parse Excel: ${error}`));
@@ -66,13 +69,16 @@ const parseExcel = async (file: File): Promise<Transaction[]> => {
   });
 };
 
-const normalizeData = (data: Record<string, any>[]): Transaction[] => {
+const normalizeData = (data: Record<string, any>[], defaultCurrency: string): Transaction[] => {
   return data.map((row) => {
+    const currency = extractCurrency(row, defaultCurrency);
     const transaction: Transaction = {
       date: extractDate(row),
       description: extractDescription(row),
       amount: extractAmount(row),
-      reference: extractReference(row)
+      reference: extractReference(row),
+      currency,
+      originalAmount: extractAmount(row)
     };
     return transaction;
   }).filter(t => t.amount !== 0);
@@ -168,6 +174,37 @@ const extractReference = (row: Record<string, any>): string | undefined => {
   }
 
   return undefined;
+};
+
+const extractCurrency = (row: Record<string, any>, defaultCurrency: string): string => {
+  const currencyFields = ['currency', 'curr', 'ccy'];
+
+  for (const field of currencyFields) {
+    const key = Object.keys(row).find(k => k.toLowerCase() === field);
+    if (key && row[key]) {
+      const value = String(row[key]).trim().toUpperCase();
+      if (value.length === 3) {
+        return value;
+      }
+    }
+  }
+
+  for (const value of Object.values(row)) {
+    if (value) {
+      const strValue = String(value);
+      const currencyFromSymbol = detectCurrencyFromSymbol(strValue);
+      if (currencyFromSymbol) {
+        return currencyFromSymbol;
+      }
+
+      const currencyFromCode = detectCurrencyFromCode(strValue);
+      if (currencyFromCode) {
+        return currencyFromCode;
+      }
+    }
+  }
+
+  return defaultCurrency;
 };
 
 const parseAmount = (value: any): number => {

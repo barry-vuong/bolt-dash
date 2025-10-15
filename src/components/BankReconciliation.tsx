@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Upload, FileText, Download, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileText, Download, Loader2, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
 import { parseFile } from '../utils/fileParser';
 import { reconcileTransactions, ReconciliationResult } from '../utils/reconciliation';
+import { SUPPORTED_CURRENCIES } from '../utils/fxRates';
+import { formatAmount } from '../utils/currencyConversion';
 
 const formatDateUK = (dateStr: string): string => {
   const date = new Date(dateStr);
@@ -14,6 +16,9 @@ const formatDateUK = (dateStr: string): string => {
 export const BankReconciliation: React.FC = () => {
   const [bankFile, setBankFile] = useState<File | null>(null);
   const [accountsFile, setAccountsFile] = useState<File | null>(null);
+  const [bankCurrency, setBankCurrency] = useState<string>('USD');
+  const [accountsCurrency, setAccountsCurrency] = useState<string>('USD');
+  const [baseCurrency, setBaseCurrency] = useState<string>('USD');
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ReconciliationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +43,8 @@ export const BankReconciliation: React.FC = () => {
     setDebugLogs([]);
 
     try {
-      const bankTransactions = await parseFile(bankFile);
-      const accountTransactions = await parseFile(accountsFile);
+      const bankTransactions = await parseFile(bankFile, bankCurrency);
+      const accountTransactions = await parseFile(accountsFile, accountsCurrency);
 
       if (bankTransactions.length === 0) {
         throw new Error('No transactions found in bank file. Please check the file format.');
@@ -52,6 +57,7 @@ export const BankReconciliation: React.FC = () => {
       const reconciliationResult = await reconcileTransactions(
         bankTransactions,
         accountTransactions,
+        baseCurrency,
         (log) => setDebugLogs(prev => [...prev, log])
       );
       setResult(reconciliationResult);
@@ -77,21 +83,21 @@ export const BankReconciliation: React.FC = () => {
   };
 
   const generateCSV = (data: ReconciliationResult): string => {
-    let csv = 'Type,Date,Description,Amount\n';
+    let csv = 'Type,Date,Description,Currency,Original Amount,Converted Amount,Base Currency\n';
 
     csv += '\nMATCHED TRANSACTIONS\n';
     data.matched.forEach(item => {
-      csv += `Matched,${formatDateUK(item.date)},"${item.description}",${item.bankAmount}\n`;
+      csv += `Matched,${formatDateUK(item.date)},"${item.description}",${item.bankCurrency},${item.bankOriginalAmount},${item.bankAmount},${data.summary.baseCurrency}\n`;
     });
 
     csv += '\nUNMATCHED BANK TRANSACTIONS\n';
     data.unmatched.bank.forEach(item => {
-      csv += `Unmatched Bank,${formatDateUK(item.date)},"${item.description}",${item.amount}\n`;
+      csv += `Unmatched Bank,${formatDateUK(item.date)},"${item.description}",${item.currency},${item.originalAmount},${item.amount},${data.summary.baseCurrency}\n`;
     });
 
     csv += '\nUNMATCHED ACCOUNTS TRANSACTIONS\n';
     data.unmatched.accounts.forEach(item => {
-      csv += `Unmatched Accounts,${formatDateUK(item.date)},"${item.description}",${item.amount}\n`;
+      csv += `Unmatched Accounts,${formatDateUK(item.date)},"${item.description}",${item.currency},${item.originalAmount},${item.amount},${data.summary.baseCurrency}\n`;
     });
 
     return csv;
@@ -108,18 +114,43 @@ export const BankReconciliation: React.FC = () => {
             </p>
           </div>
 
+          <div className="bg-l1-surface rounded-lg border border-l1-border p-6 mb-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <DollarSign className="text-l1-accent" size={20} />
+              <h3 className="text-lg font-semibold text-l1-text-primary">Base Currency</h3>
+            </div>
+            <p className="text-sm text-l1-text-secondary mb-4">
+              Select the currency for reconciliation reporting. All amounts will be converted to this currency.
+            </p>
+            <select
+              value={baseCurrency}
+              onChange={(e) => setBaseCurrency(e.target.value)}
+              className="w-full md:w-auto px-4 py-2 bg-l1-background border border-l1-border rounded-lg text-l1-text-primary focus:outline-none focus:ring-2 focus:ring-l1-accent"
+            >
+              {SUPPORTED_CURRENCIES.map(curr => (
+                <option key={curr.code} value={curr.code}>
+                  {curr.symbol} {curr.name} ({curr.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <UploadZone
               title="Bank Statement"
               description="Upload CSV or Excel file from your bank"
               file={bankFile}
+              currency={bankCurrency}
               onFileSelect={(file) => handleFileUpload(file, 'bank')}
+              onCurrencyChange={setBankCurrency}
             />
             <UploadZone
               title="Accounting System"
               description="Upload CSV or Excel file from your accounts"
               file={accountsFile}
+              currency={accountsCurrency}
               onFileSelect={(file) => handleFileUpload(file, 'accounts')}
+              onCurrencyChange={setAccountsCurrency}
             />
           </div>
 
@@ -167,26 +198,32 @@ export const BankReconciliation: React.FC = () => {
                   </button>
                 </div>
 
+                <div className="bg-l1-background rounded-lg border border-l1-border p-4 mb-6">
+                  <div className="text-sm text-l1-text-secondary">
+                    All amounts displayed in <span className="font-semibold text-l1-text-primary">{result.summary.baseCurrency}</span>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="bg-green-500/10 border border-green-500/50 rounded-lg p-4">
                     <div className="text-2xl font-bold text-green-500">{result.summary.totalMatched}</div>
                     <div className="text-sm text-l1-text-secondary mt-1">Matched Transactions</div>
                     <div className="text-lg font-semibold text-l1-text-primary mt-2">
-                      ${result.summary.matchedAmount.toFixed(2)}
+                      {formatAmount(result.summary.matchedAmount, result.summary.baseCurrency)}
                     </div>
                   </div>
                   <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-4">
                     <div className="text-2xl font-bold text-yellow-500">{result.unmatched.bank.length}</div>
                     <div className="text-sm text-l1-text-secondary mt-1">Unmatched Bank</div>
                     <div className="text-lg font-semibold text-l1-text-primary mt-2">
-                      ${result.summary.unmatchedBankAmount.toFixed(2)}
+                      {formatAmount(result.summary.unmatchedBankAmount, result.summary.baseCurrency)}
                     </div>
                   </div>
                   <div className="bg-orange-500/10 border border-orange-500/50 rounded-lg p-4">
                     <div className="text-2xl font-bold text-orange-500">{result.unmatched.accounts.length}</div>
                     <div className="text-sm text-l1-text-secondary mt-1">Unmatched Accounts</div>
                     <div className="text-lg font-semibold text-l1-text-primary mt-2">
-                      ${result.summary.unmatchedAccountsAmount.toFixed(2)}
+                      {formatAmount(result.summary.unmatchedAccountsAmount, result.summary.baseCurrency)}
                     </div>
                   </div>
                 </div>
@@ -197,18 +234,24 @@ export const BankReconciliation: React.FC = () => {
                     items={result.matched.map(item => ({
                       date: item.date,
                       description: item.description,
-                      amount: item.bankAmount
+                      amount: item.bankAmount,
+                      currency: item.bankCurrency,
+                      originalAmount: item.bankOriginalAmount,
+                      conversionRate: item.conversionRate
                     }))}
+                    baseCurrency={result.summary.baseCurrency}
                     type="success"
                   />
                   <ResultSection
                     title="Unmatched Bank Transactions"
                     items={result.unmatched.bank}
+                    baseCurrency={result.summary.baseCurrency}
                     type="warning"
                   />
                   <ResultSection
                     title="Unmatched Accounting Transactions"
                     items={result.unmatched.accounts}
+                    baseCurrency={result.summary.baseCurrency}
                     type="error"
                   />
                 </div>
@@ -236,10 +279,12 @@ interface UploadZoneProps {
   title: string;
   description: string;
   file: File | null;
+  currency: string;
   onFileSelect: (file: File | null) => void;
+  onCurrencyChange: (currency: string) => void;
 }
 
-const UploadZone: React.FC<UploadZoneProps> = ({ title, description, file, onFileSelect }) => {
+const UploadZone: React.FC<UploadZoneProps> = ({ title, description, file, currency, onFileSelect, onCurrencyChange }) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
@@ -259,6 +304,21 @@ const UploadZone: React.FC<UploadZoneProps> = ({ title, description, file, onFil
     <div className="bg-l1-surface rounded-lg border border-l1-border p-6">
       <h3 className="text-lg font-semibold text-l1-text-primary mb-2">{title}</h3>
       <p className="text-sm text-l1-text-secondary mb-4">{description}</p>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-l1-text-primary mb-2">File Currency</label>
+        <select
+          value={currency}
+          onChange={(e) => onCurrencyChange(e.target.value)}
+          className="w-full px-3 py-2 bg-l1-background border border-l1-border rounded-lg text-l1-text-primary focus:outline-none focus:ring-2 focus:ring-l1-accent"
+        >
+          {SUPPORTED_CURRENCIES.map(curr => (
+            <option key={curr.code} value={curr.code}>
+              {curr.symbol} {curr.name} ({curr.code})
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div
         onDrop={handleDrop}
@@ -309,11 +369,12 @@ const UploadZone: React.FC<UploadZoneProps> = ({ title, description, file, onFil
 
 interface ResultSectionProps {
   title: string;
-  items: Array<{ date: string; description: string; amount: number }>;
+  items: Array<{ date: string; description: string; amount: number; currency?: string; originalAmount?: number; conversionRate?: number }>;
+  baseCurrency: string;
   type: 'success' | 'warning' | 'error';
 }
 
-const ResultSection: React.FC<ResultSectionProps> = ({ title, items, type }) => {
+const ResultSection: React.FC<ResultSectionProps> = ({ title, items, baseCurrency, type }) => {
   const [expanded, setExpanded] = useState(true);
 
   const colors = {
@@ -332,15 +393,29 @@ const ResultSection: React.FC<ResultSectionProps> = ({ title, items, type }) => 
         <span className="text-sm text-l1-text-secondary">{items.length} transactions</span>
       </button>
       {expanded && (
-        <div className="border-t border-l1-border">
+        <div className="border-t border-l1-border divide-y divide-l1-border">
           {items.map((item, idx) => (
-            <div key={idx} className="p-4 flex items-center justify-between hover:bg-l1-primary/30 transition-colors">
-              <div className="flex-1">
-                <div className="font-medium text-l1-text-primary">{item.description}</div>
-                <div className="text-sm text-l1-text-secondary mt-1">{formatDateUK(item.date)}</div>
-              </div>
-              <div className="text-lg font-semibold text-l1-text-primary">
-                ${item.amount.toFixed(2)}
+            <div key={idx} className="p-4 hover:bg-l1-primary/30 transition-colors">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="font-medium text-l1-text-primary">{item.description}</div>
+                  <div className="text-sm text-l1-text-secondary mt-1">{formatDateUK(item.date)}</div>
+                  {item.currency && item.currency !== baseCurrency && item.originalAmount && (
+                    <div className="text-xs text-l1-text-secondary mt-2 space-y-1">
+                      <div>
+                        Original: {formatAmount(item.originalAmount, item.currency)}
+                      </div>
+                      {item.conversionRate && (
+                        <div>
+                          Rate: 1 {item.currency} = {item.conversionRate.toFixed(4)} {baseCurrency}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="text-lg font-semibold text-l1-text-primary ml-4">
+                  {formatAmount(item.amount, baseCurrency)}
+                </div>
               </div>
             </div>
           ))}

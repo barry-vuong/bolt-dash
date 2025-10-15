@@ -1,0 +1,8 @@
+Date,Description,Amount,Balance,Currency
+01/10/2025,Deposit - Client A,5000,5000,USD
+03/10/2025,POS Purchase - Office Supplies,-250.45,4749.55,USD
+05/10/2025,Bank Fee,-15,4734.55,USD
+06/10/2025,Deposit - Client B EUR,2500,7234.55,EUR
+08/10/2025,Withdrawal - Rent GBP,-1000,6234.55,GBP
+09/10/2025,POS Purchase - Travel,-45000,6189.55,JPY
+10/10/2025,Deposit - Client C,800,6989.55,CAD

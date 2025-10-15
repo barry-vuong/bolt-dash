@@ -1,0 +1,8 @@
+Date,Transaction_ID,Description,Debit,Credit,Balance,Currency
+01/10/2025,TX1001,Client A Payment,0,5000,5000,USD
+03/10/2025,TX1002,Office Supplies Purchase,250.45,0,4749.55,USD
+05/10/2025,TX1003,Service Fee,15,0,4734.55,USD
+06/10/2025,TX1004,Client B Payment EUR,0,2500,7234.55,EUR
+08/10/2025,TX1005,Office Rent GBP,1000,0,6234.55,GBP
+09/10/2025,TX1006,Flight Booking JPY,45000,0,6189.55,JPY
+10/10/2025,TX1007,Client C Payment CAD,0,800,6989.55,CAD

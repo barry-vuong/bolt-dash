@@ -1,4 +1,5 @@
 import { Transaction } from './fileParser';
+import { convertTransactionsToBaseCurrency, ConvertedTransaction } from './currencyConversion';
 
 export interface ReconciliationResult {
   matched: Array<{
@@ -6,10 +7,15 @@ export interface ReconciliationResult {
     accountAmount: number;
     description: string;
     date: string;
+    bankCurrency: string;
+    accountCurrency: string;
+    bankOriginalAmount: number;
+    accountOriginalAmount: number;
+    conversionRate?: number;
   }>;
   unmatched: {
-    bank: Array<{ amount: number; description: string; date: string }>;
-    accounts: Array<{ amount: number; description: string; date: string }>;
+    bank: Array<{ amount: number; description: string; date: string; currency: string; originalAmount: number }>;
+    accounts: Array<{ amount: number; description: string; date: string; currency: string; originalAmount: number }>;
   };
   summary: {
     totalMatched: number;
@@ -17,12 +23,14 @@ export interface ReconciliationResult {
     matchedAmount: number;
     unmatchedBankAmount: number;
     unmatchedAccountsAmount: number;
+    baseCurrency: string;
   };
 }
 
 export const reconcileTransactions = async (
   bankTransactions: Transaction[],
   accountTransactions: Transaction[],
+  baseCurrency: string = 'USD',
   onLog?: (message: string) => void
 ): Promise<ReconciliationResult> => {
   const log = (msg: string) => {
@@ -31,10 +39,16 @@ export const reconcileTransactions = async (
   };
 
   log(`=== Starting reconciliation with ${bankTransactions.length} bank txns and ${accountTransactions.length} account txns ===`);
+  log(`Converting all amounts to base currency: ${baseCurrency}`);
+
+  const convertedBankTransactions = await convertTransactionsToBaseCurrency(bankTransactions, baseCurrency);
+  const convertedAccountTransactions = await convertTransactionsToBaseCurrency(accountTransactions, baseCurrency);
+
+  log(`All transactions converted to ${baseCurrency}`);
 
   const matched: ReconciliationResult['matched'] = [];
-  const unmatchedBank: Transaction[] = [...bankTransactions];
-  const unmatchedAccounts: Transaction[] = [...accountTransactions];
+  const unmatchedBank: ConvertedTransaction[] = [...convertedBankTransactions];
+  const unmatchedAccounts: ConvertedTransaction[] = [...convertedAccountTransactions];
 
   const tolerance = 0.01;
 
@@ -49,10 +63,15 @@ export const reconcileTransactions = async (
       if (matchResult) {
         log(`✅ FOUND MATCH!`);
         matched.push({
-          bankAmount: bankTxn.amount,
-          accountAmount: accountTxn.amount,
+          bankAmount: bankTxn.convertedAmount,
+          accountAmount: accountTxn.convertedAmount,
           description: bankTxn.description || accountTxn.description,
-          date: bankTxn.date
+          date: bankTxn.date,
+          bankCurrency: bankTxn.currency,
+          accountCurrency: accountTxn.currency,
+          bankOriginalAmount: bankTxn.originalAmount || bankTxn.amount,
+          accountOriginalAmount: accountTxn.originalAmount || accountTxn.amount,
+          conversionRate: bankTxn.currency !== baseCurrency ? bankTxn.conversionRate : accountTxn.conversionRate
         });
 
         unmatchedBank.splice(i, 1);
@@ -63,21 +82,25 @@ export const reconcileTransactions = async (
   }
 
   const matchedAmount = matched.reduce((sum, m) => sum + Math.abs(m.bankAmount), 0);
-  const unmatchedBankAmount = unmatchedBank.reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  const unmatchedAccountsAmount = unmatchedAccounts.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const unmatchedBankAmount = unmatchedBank.reduce((sum, t) => sum + Math.abs(t.convertedAmount), 0);
+  const unmatchedAccountsAmount = unmatchedAccounts.reduce((sum, t) => sum + Math.abs(t.convertedAmount), 0);
 
   return {
     matched,
     unmatched: {
       bank: unmatchedBank.map(t => ({
-        amount: t.amount,
+        amount: t.convertedAmount,
         description: t.description,
-        date: t.date
+        date: t.date,
+        currency: t.currency,
+        originalAmount: t.originalAmount || t.amount
       })),
       accounts: unmatchedAccounts.map(t => ({
-        amount: t.amount,
+        amount: t.convertedAmount,
         description: t.description,
-        date: t.date
+        date: t.date,
+        currency: t.currency,
+        originalAmount: t.originalAmount || t.amount
       }))
     },
     summary: {
@@ -85,18 +108,19 @@ export const reconcileTransactions = async (
       totalUnmatched: unmatchedBank.length + unmatchedAccounts.length,
       matchedAmount,
       unmatchedBankAmount,
-      unmatchedAccountsAmount
+      unmatchedAccountsAmount,
+      baseCurrency
     }
   };
 };
 
 const isMatch = (
-  bankTxn: Transaction,
-  accountTxn: Transaction,
+  bankTxn: ConvertedTransaction,
+  accountTxn: ConvertedTransaction,
   tolerance: number,
   log?: (message: string) => void
 ): boolean => {
-  const amountMatch = Math.abs(Math.abs(bankTxn.amount) - Math.abs(accountTxn.amount)) <= tolerance;
+  const amountMatch = Math.abs(Math.abs(bankTxn.convertedAmount) - Math.abs(accountTxn.convertedAmount)) <= tolerance;
 
   if (!amountMatch) {
     return false;
