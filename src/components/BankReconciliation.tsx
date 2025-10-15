@@ -151,17 +151,22 @@ export const BankReconciliation: React.FC = () => {
           <div className="flex flex-col items-center space-y-4">
             <div className="flex items-center space-x-4">
               <label className="flex items-center space-x-3 cursor-pointer group">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={useAI}
-                    onChange={(e) => setUseAI(e.target.checked)}
-                    disabled={processing || aiModelLoading}
-                    className="peer sr-only"
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={useAI}
+                  onClick={() => setUseAI(!useAI)}
+                  disabled={processing || aiModelLoading}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-l1-accent focus:ring-offset-2 focus:ring-offset-l1-background disabled:opacity-50 disabled:cursor-not-allowed ${
+                    useAI ? 'bg-l1-accent' : 'bg-l1-border'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      useAI ? 'translate-x-6' : 'translate-x-1'
+                    }`}
                   />
-                  <div className="w-11 h-6 bg-l1-border rounded-full peer-checked:bg-l1-accent transition-colors"></div>
-                  <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-                </div>
+                </button>
                 <div className="flex items-center space-x-2">
                   <Sparkles size={18} className={useAI ? 'text-l1-accent' : 'text-l1-text-secondary'} />
                   <span className="font-medium text-l1-text-primary group-hover:text-l1-accent transition-colors">
