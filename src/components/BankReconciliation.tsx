@@ -16,8 +16,6 @@ const formatDateUK = (dateStr: string): string => {
 export const BankReconciliation: React.FC = () => {
   const [bankFile, setBankFile] = useState<File | null>(null);
   const [accountsFile, setAccountsFile] = useState<File | null>(null);
-  const [bankCurrency, setBankCurrency] = useState<string>('USD');
-  const [accountsCurrency, setAccountsCurrency] = useState<string>('USD');
   const [baseCurrency, setBaseCurrency] = useState<string>('USD');
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ReconciliationResult | null>(null);
@@ -43,8 +41,8 @@ export const BankReconciliation: React.FC = () => {
     setDebugLogs([]);
 
     try {
-      const bankTransactions = await parseFile(bankFile, bankCurrency);
-      const accountTransactions = await parseFile(accountsFile, accountsCurrency);
+      const bankTransactions = await parseFile(bankFile);
+      const accountTransactions = await parseFile(accountsFile);
 
       if (bankTransactions.length === 0) {
         throw new Error('No transactions found in bank file. Please check the file format.');
@@ -140,17 +138,13 @@ export const BankReconciliation: React.FC = () => {
               title="Bank Statement"
               description="Upload CSV or Excel file from your bank"
               file={bankFile}
-              currency={bankCurrency}
               onFileSelect={(file) => handleFileUpload(file, 'bank')}
-              onCurrencyChange={setBankCurrency}
             />
             <UploadZone
               title="Accounting System"
               description="Upload CSV or Excel file from your accounts"
               file={accountsFile}
-              currency={accountsCurrency}
               onFileSelect={(file) => handleFileUpload(file, 'accounts')}
-              onCurrencyChange={setAccountsCurrency}
             />
           </div>
 
@@ -279,12 +273,10 @@ interface UploadZoneProps {
   title: string;
   description: string;
   file: File | null;
-  currency: string;
   onFileSelect: (file: File | null) => void;
-  onCurrencyChange: (currency: string) => void;
 }
 
-const UploadZone: React.FC<UploadZoneProps> = ({ title, description, file, currency, onFileSelect, onCurrencyChange }) => {
+const UploadZone: React.FC<UploadZoneProps> = ({ title, description, file, onFileSelect }) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
@@ -304,21 +296,6 @@ const UploadZone: React.FC<UploadZoneProps> = ({ title, description, file, curre
     <div className="bg-l1-surface rounded-lg border border-l1-border p-6">
       <h3 className="text-lg font-semibold text-l1-text-primary mb-2">{title}</h3>
       <p className="text-sm text-l1-text-secondary mb-4">{description}</p>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-l1-text-primary mb-2">File Currency</label>
-        <select
-          value={currency}
-          onChange={(e) => onCurrencyChange(e.target.value)}
-          className="w-full px-3 py-2 bg-l1-background border border-l1-border rounded-lg text-l1-text-primary focus:outline-none focus:ring-2 focus:ring-l1-accent"
-        >
-          {SUPPORTED_CURRENCIES.map(curr => (
-            <option key={curr.code} value={curr.code}>
-              {curr.symbol} {curr.name} ({curr.code})
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div
         onDrop={handleDrop}
