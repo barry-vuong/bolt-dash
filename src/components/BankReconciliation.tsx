@@ -18,13 +18,13 @@ export const BankReconciliation: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<ReconciliationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [useAI, setUseAI] = useState(false);
+  const [useAI, setUseAI] = useState(true);
   const [aiModelLoading, setAiModelLoading] = useState(false);
   const [aiModelReady, setAiModelReady] = useState(false);
 
   useEffect(() => {
     const loadModel = async () => {
-      if (useAI && !isModelReady()) {
+      if (!isModelReady()) {
         setAiModelLoading(true);
         try {
           await initializeAIModel();
@@ -35,10 +35,12 @@ export const BankReconciliation: React.FC = () => {
         } finally {
           setAiModelLoading(false);
         }
+      } else {
+        setAiModelReady(true);
       }
     };
     loadModel();
-  }, [useAI]);
+  }, []);
 
   const handleFileUpload = (file: File | null, type: 'bank' | 'accounts') => {
     if (type === 'bank') {
