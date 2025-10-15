@@ -1,4 +1,5 @@
 import { Transaction } from './fileParser';
+import { calculateAISimilarity, isModelReady } from './aiMatcher';
 
 export interface ReconciliationResult {
   matched: Array<{
@@ -20,10 +21,11 @@ export interface ReconciliationResult {
   };
 }
 
-export const reconcileTransactions = (
+export const reconcileTransactions = async (
   bankTransactions: Transaction[],
-  accountTransactions: Transaction[]
-): ReconciliationResult => {
+  accountTransactions: Transaction[],
+  useAI: boolean = false
+): Promise<ReconciliationResult> => {
   const matched: ReconciliationResult['matched'] = [];
   const unmatchedBank: Transaction[] = [...bankTransactions];
   const unmatchedAccounts: Transaction[] = [...accountTransactions];
@@ -36,7 +38,8 @@ export const reconcileTransactions = (
     for (let j = unmatchedAccounts.length - 1; j >= 0; j--) {
       const accountTxn = unmatchedAccounts[j];
 
-      if (isMatch(bankTxn, accountTxn, tolerance)) {
+      const matchResult = await isMatch(bankTxn, accountTxn, tolerance, useAI);
+      if (matchResult) {
         matched.push({
           bankAmount: bankTxn.amount,
           accountAmount: accountTxn.amount,
@@ -79,11 +82,12 @@ export const reconcileTransactions = (
   };
 };
 
-const isMatch = (
+const isMatch = async (
   bankTxn: Transaction,
   accountTxn: Transaction,
-  tolerance: number
-): boolean => {
+  tolerance: number,
+  useAI: boolean = false
+): Promise<boolean> => {
   const amountMatch = Math.abs(bankTxn.amount - accountTxn.amount) <= tolerance;
 
   if (!amountMatch) {
@@ -99,10 +103,19 @@ const isMatch = (
     }
   }
 
-  const descriptionSimilarity = calculateSimilarity(
-    bankTxn.description.toLowerCase(),
-    accountTxn.description.toLowerCase()
-  );
+  let descriptionSimilarity: number;
+
+  if (useAI && isModelReady()) {
+    descriptionSimilarity = await calculateAISimilarity(
+      bankTxn.description,
+      accountTxn.description
+    );
+  } else {
+    descriptionSimilarity = calculateSimilarity(
+      bankTxn.description.toLowerCase(),
+      accountTxn.description.toLowerCase()
+    );
+  }
 
   if (dateMatch && descriptionSimilarity > 0.6) {
     return true;
