@@ -52,6 +52,7 @@ const hasCommonKeywords = (desc1: string, desc2: string): boolean => {
 
   for (const keyword of keywords1) {
     if (keywords2.has(keyword)) {
+      console.log(`Common keyword found: "${keyword}"`);
       return true;
     }
   }

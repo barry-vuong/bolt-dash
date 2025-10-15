@@ -111,6 +111,13 @@ const isMatch = async (
       accountTxn.description
     );
 
+    console.log(`AI Similarity: "${bankTxn.description}" vs "${accountTxn.description}" = ${descriptionSimilarity.toFixed(3)}`);
+    console.log(`Date match: ${dateMatch}, Amount match: ${amountMatch}`);
+
+    if (dateMatch && amountMatch && descriptionSimilarity > 0.25) {
+      return true;
+    }
+
     if (dateMatch && descriptionSimilarity > 0.45) {
       return true;
     }
