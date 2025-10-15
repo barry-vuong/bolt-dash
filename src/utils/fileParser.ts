@@ -179,12 +179,15 @@ const parseAmount = (value: any): number => {
 };
 
 const normalizeDate = (dateValue: any): string => {
-  if (!dateValue) return new Date().toISOString().split('T')[0];
+  if (!dateValue) {
+    const today = new Date();
+    return formatDateISO(today.getFullYear(), today.getMonth() + 1, today.getDate());
+  }
 
   if (typeof dateValue === 'number') {
     const excelEpoch = new Date(1899, 11, 30);
     const date = new Date(excelEpoch.getTime() + dateValue * 24 * 60 * 60 * 1000);
-    return date.toISOString().split('T')[0];
+    return formatDateISO(date.getFullYear(), date.getMonth() + 1, date.getDate());
   }
 
   const dateStr = String(dateValue).trim();
@@ -198,19 +201,24 @@ const normalizeDate = (dateValue: any): string => {
     const year = parseInt(match[3], 10);
 
     if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-      const date = new Date(year, month - 1, day);
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
-      }
+      return formatDateISO(year, month, day);
     }
   }
 
   const date = new Date(dateStr);
   if (!isNaN(date.getTime())) {
-    return date.toISOString().split('T')[0];
+    return formatDateISO(date.getFullYear(), date.getMonth() + 1, date.getDate());
   }
 
-  return new Date().toISOString().split('T')[0];
+  const today = new Date();
+  return formatDateISO(today.getFullYear(), today.getMonth() + 1, today.getDate());
+};
+
+const formatDateISO = (year: number, month: number, day: number): string => {
+  const yyyy = String(year).padStart(4, '0');
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 };
 
 const isValidDate = (dateStr: string): boolean => {
