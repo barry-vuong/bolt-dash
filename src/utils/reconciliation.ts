@@ -36,6 +36,16 @@ export const reconcileTransactions = async (
   log(`AI Matching: ${useAI ? 'ENABLED' : 'DISABLED'}`);
   log(`AI Model Ready: ${isModelReady()}`);
 
+  log(`\n📊 BANK TRANSACTIONS:`);
+  bankTransactions.forEach((t, i) => {
+    log(`  ${i + 1}. "${t.description}" | $${t.amount} | ${t.date}`);
+  });
+
+  log(`\n📊 ACCOUNT TRANSACTIONS:`);
+  accountTransactions.forEach((t, i) => {
+    log(`  ${i + 1}. "${t.description}" | $${t.amount} | ${t.date}`);
+  });
+
   const matched: ReconciliationResult['matched'] = [];
   const unmatchedBank: Transaction[] = [...bankTransactions];
   const unmatchedAccounts: Transaction[] = [...accountTransactions];
